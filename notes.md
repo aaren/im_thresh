@@ -1,22 +1,16 @@
-Thresholding lab images.
+title: Edge detection in lab images
+date: 12/03/13
+
+I've recorded some lab runs with HD video (1920x1080, 25HZ) and am
+looking at simple ways to extract data from them. 
 
 Get a single frame at 62s out of the movie
 
     ffmpeg -ss 62 -i cam1.MOV -t 1 img.jpg
 
-Split and plot in `ipython --pylab`
+Split into channels:
 
-    :::python
-    im = imread('img.jpg')
-    r, g, b = np.dsplit(im[390:605], 3)
-    for c in [r, g, b]:
-        figure()
-        imshow(r.squeeze(), origin='lower')
-
-![original](./img.png)
-![red](./ex-r.png)
-![green](./ex-g.png)
-![blue](./ex-b.png)
+![image-decomposition](./channels.png)
 
 It appears that the sharpest single colour indication of the
 'green' fluid that forms the lower layer is the *absence* of blue.
@@ -75,12 +69,8 @@ There is a problem here in that the gaussian smoothing reduces the
 resolution of the image. We can see how much by drawing the smoothed
 image with varying levels of sigma:
 
-    :::python
-    from scipy.ndimage import gaussian_filter
-    fig = figure()
-    for s in range(1, 8):
-        fig.add_subplot(8,1,s)
-        imshow(gaussian_filter(bn, s - 1), origin='lower')
+![gaussian-comparison](./gaussian-comp.png)
+
 
 #### Thresholding ####
 
@@ -94,6 +84,27 @@ find edge of threshold region.
     # have to set the sigma to 0 as we've already done gaussian
     cb = canny(tbn, 0)
 
+![threshold](./threshold.png)
+
+The problem with this simple thresholding is that it isn't very
+clever with respect to whether things are edges or not. By using the
+boolean threshold stage we remove information about the strength of
+edges in the image and lose the power of the hysteresis thresholding
+used in the canny algorithm.
+
+#### Setting high / low threshold values ####
+
+The canny algorithm takes as input two threshold values for the
+hysteresis thresholding stage. The appropriate value for these
+varies depending on how much smoothing we apply to the source image
+and will likely vary between different input images.
+
+The units of these threshold values are that of the magnitude of the
+Sobel operator over the image. 
+
+We need a way to automatically determine the appropriate threshold 
+values to use.
+
 
 #### Conversion to 1d signal ####
 
@@ -101,10 +112,12 @@ find edge of threshold region.
 locations of the points on the interface.
 
 We can get a list of the indices of the true elements that define
-the edges quite easily
+the edges and sort them in x with
 
     :::python
     Y, X = np.where(cb)
+    s = X.argsort()
+    ix, iy = X[s], Y[s]
 
 whether these points all sit on the true interfacial line is
 another question. If our canny edge detector has been effective then
