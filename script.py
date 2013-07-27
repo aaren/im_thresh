@@ -1,4 +1,5 @@
 # generate the images for blog post
+import sys
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -103,10 +104,14 @@ class LabImage(object):
         iy, ix = np.where(cb)
         s = ix.argsort()
         ax.imshow(self.b, origin='lower')
-        ax.plot(ix[s], iy[s], 'k', linewidth=2)
+        ax.plot(ix[s], iy[s], 'ko', linewidth=1)
         fig.savefig('canny-interface.png')
 
     def sobel_interface(self, sigma=4, lo=None, hi=None):
+        """Gaussian smooth the image and apply a sobel filter.
+
+        Then, apply canny edge detection.
+        """
         fig = plt.figure()
         ax = fig.add_subplot(111)
         ax.set_title(r'$\Sigma={s}$, hi={hi}, lo={lo}'.format(s=sigma, hi=hi, lo=lo))
@@ -122,7 +127,9 @@ class LabImage(object):
         cs = ax.contourf(sob)
         fig.colorbar(cs)
         # get the interface and overplot
-        cb = skif.canny(self.b, sigma=sigma, low_threshold=lo, high_threshold=hi)
+        cb = skif.canny(self.b, sigma=sigma,
+                        low_threshold=lo,
+                        high_threshold=hi)
         iy, ix = np.where(cb)
         s = ix.argsort()
         ax.plot(ix[s], iy[s], 'ko', linewidth=3)
@@ -137,6 +144,8 @@ class LabImage(object):
         plt.show()
 
 if __name__ == '__main__':
+    sigma = int(sys.argv[1])
+    print "sigma = {sigma}".format(sigma=sigma)
     im = LabImage('img.jpg')
     print("channels")
     im.channels()
@@ -145,4 +154,6 @@ if __name__ == '__main__':
     print("threshold")
     im.threshold()
     print("canny interface")
-    im.canny_interface()
+    im.canny_interface(sigma=sigma)
+    print("sobel interface")
+    im.sobel_interface(sigma=sigma)
